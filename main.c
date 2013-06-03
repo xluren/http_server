@@ -36,51 +36,128 @@ int main(int argc,char *argv)
 {
 	struct sockaddr_in client_addr;
 	int connect_fd,server_sockfd;
+	int select_ret;
+	int recv_ret;
+	int i=0;
 	int addr_len=sizeof(client_addr);
 	char http_request[64]={'\0'};
+	char recv_buf[1024];
 	pid_t work_pid;
 	
-	read_conf("conf");	
-	printf("current path is %s\n",getcwd(NULL,0));
+	read_conf("conf");	//test read configure module
+	printf("current path is %s\n",getcwd(NULL,0)); //test chdir to root
 	chdir(root_path);
 
 	server_sockfd=set_socket(6550);
-	if( listen(server_sockfd, 10) == -1)
+	if( listen(server_sockfd, BACKLOG) == -1)
         {    
                 printf("listen socket error: %s(errno: %d)\n",strerror(errno),errno);    
                 exit(0);    
-        }      
+        }
+	
         printf("======waiting for client's request======\n");    
+
+	fd_set read_set;
+	struct timeval outtime_tv;
+	int	connected_count=0;
+	int	connected_client[MAXCLIENT]={0};
+	
+	//memset(connected_client,'0',MAXCLIENT);
+	FD_ZERO(&read_set);
+	
         while(1)
-        {    
-                if( (connect_fd = accept(server_sockfd, (struct sockaddr*)&client_addr,&addr_len)) == -1)
-                {        
-                        printf("accept socket error: %s(errno: %d)",strerror(errno),errno);        
-                        continue;    
-                }
-		char http_buf[1024];
-		recv(connect_fd,http_buf,1024,0);
-		printf("----------------------------------------------------------------\n");
-		printf("%s\n",http_buf);
-		printf("----------------------------------------------------------------\n");
-		if((work_pid=fork())>0)
+        {
+		FD_ZERO(&read_set);
+		FD_SET(server_sockfd, &read_set);
+		outtime_tv.tv_sec=3;
+		outtime_tv.tv_usec=0;
+
+		//add connected client  to read_set
+		for(i=0;i<MAXCLIENT;i++)
 		{
-			close(connect_fd);
-			continue;
+			printf("fd---%d\n",connected_client[i]);  
+			if(connected_client[i]!=0)
+			{
+				FD_SET(connected_client[i],&read_set);
+			}
 		}
-		else if(work_pid==0)
+		
+		select_ret=select(MAXCLIENT+1,&read_set,NULL,NULL,&outtime_tv);
+		
+		if(select_ret<0)
 		{
-			close(server_sockfd);
-			sscanf(http_buf, "%*[^/]/%[^ ]",http_request);
-			printf("the request---%s %d\n",http_request,strlen(http_request));
-			deal_request(http_request,connect_fd);
-			bzero(http_request,64);
+			printf("select error\n");
 			exit(0);
 		}
+		else if(select_ret==0)
+		{
+			printf("time_out\n");
+			continue;
+		}
 		else
-			printf("error");
+		{
+			//read set can access
+			for(i=0;i<MAXCLIENT;i++)
+			{
+				if(FD_ISSET(connected_client[i],&read_set))
+				{
+					recv_ret=recv(connected_client[i],recv_buf,sizeof(recv_buf),0);
+					if(recv_ret<=0)
+					{
+						printf("client %d closed\n",i);
+						close(connected_client[i]);
+						FD_CLR(connected_client[i],&read_set);
+						connected_client[i]=0;
+						connected_count--;
+					}
+					else
+					{
+						recv_buf[recv_ret]='\0';
+						printf("client %d send %s\n ",i,recv_buf);
+					}
+				}
+			}
+			if(FD_ISSET(server_sockfd,&read_set))
+			{
+				if( (connect_fd = accept(server_sockfd, (struct sockaddr*)&client_addr,&addr_len)) == -1)	
+				{
+					printf("connect error\n");
+					continue;
+				}
+				if(connected_count<MAXCLIENT)
+				{
+					for(i=0;i<MAXCLIENT;i++)
+					{
+						if(connected_client[i]==0)
+						{
+							connected_client[i]=connect_fd;
+							break;
+						}
+					}
+					connected_count++;
+					printf("new connection client[%d] %d:%d\n",
+							connected_count,
+							inet_ntoa(client_addr.sin_addr), 
+							ntohs(client_addr.sin_port));  
+				}
+				else
+				{
+					printf("max connections arrive, exit\n");  
+					send(connect_fd, "bye", 4, 0);
+					close(connect_fd);
+					continue;  
+				}
+			}		
+		}
 		
-        } 
+        }
+	for (i = 0; i < BACKLOG; i++)   
+        {  
+		if(connected_client[i]!= 0)   
+                {  
+			close(connected_client[i]);  
+                }  
+        }   
 	close(server_sockfd);
 	return 0;
 }	
