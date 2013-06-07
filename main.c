@@ -113,7 +113,9 @@ int main(int argc,char *argv)
 					else
 					{
 						recv_buf[recv_ret]='\0';
-						printf("client %d send %s\n ",i,recv_buf);
+						sscanf(recv_buf, "%*[^/]/%[^ ]",http_request);
+                        			printf("the request---%s %d\n",http_request,strlen(http_request));
+                        			deal_request(http_request,connected_client[i]);
 					}
 				}
 			}
