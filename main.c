@@ -49,11 +49,6 @@ int main(int argc,char *argv)
 	chdir(root_path);
 
 	server_sockfd=set_socket(6550);
-	if( listen(server_sockfd, BACKLOG) == -1)
-        {    
-                printf("listen socket error: %s(errno: %d)\n",strerror(errno),errno);    
-                exit(0);    
-        }
 	
         printf("======waiting for client's request======\n");    
 
@@ -102,6 +97,7 @@ int main(int argc,char *argv)
 				if(FD_ISSET(connected_client[i],&read_set))
 				{
 					recv_ret=recv(connected_client[i],recv_buf,sizeof(recv_buf),0);
+					printf("the recv_buf is %s\n",recv_buf);
 					if(recv_ret<=0)
 					{
 						printf("client %d closed\n",i);

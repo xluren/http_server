@@ -52,7 +52,12 @@ int set_socket(int port)
                 //printf("bind socket error: %s(errno: %d)\n",strerror(errno),errno);    
                 //exit(0);    
 		;
-        } 
+        }
+	if( listen(sock_fd, BACKLOG) == -1)
+ 	{
+		printf("listen socket error: %s(errno: %d)\n",strerror(errno),errno);
+		exit(0);
+	}
 	return sock_fd;
 }
 
