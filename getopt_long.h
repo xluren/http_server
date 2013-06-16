@@ -17,7 +17,7 @@
 #define MAXCLIENT 5
 #define BACKLOG 5
 
-const char* root_path="/home/neusoft/getopt_long/html";
+const char* root_path="./html";
 char 	*port=0;
 char	*file=0;
 char *response_head ="HTTP/1.1 200 OK\r\n"                \
