@@ -9,7 +9,7 @@
 #include<fcntl.h>
 #include<sys/stat.h>
 #include<unistd.h>
-
+#include<sys/param.h>
 
 #define DEFAULTPORT "80"
 #define DEFAULTFILE "10"
@@ -149,4 +149,23 @@ void read_conf(char *file_name)
 		}
 	}
 	fclose(fp);
+}
+void init_daemon()
+{
+	pid_t pid;
+	int i;
+	if(pid=fork())
+		exit(0);
+	else if(pid<0)
+		exit(1);
+	setsid();
+	
+	if(pid=fork())
+		exit(0);
+	else if(pid<0)
+		exit(1);
+	chdir("/tmp");
+	for(i=0;i<NOFILE;++i)
+		close(i);
+	return ;
 }
