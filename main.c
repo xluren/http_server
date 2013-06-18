@@ -58,11 +58,11 @@ int main(int argc,char *argv)
                         printf("accept socket error: %s(errno: %d)",strerror(errno),errno);        
                         continue;    
                 }
-		char http_buf[1024];
+		/*char http_buf[1024];
 		recv(connect_fd,http_buf,1024,0);
 		printf("----------------------------------------------------------------\n");
 		printf("%s\n",http_buf);
-		printf("----------------------------------------------------------------\n");
+		printf("----------------------------------------------------------------\n");*/
 		if((work_pid=fork())>0)
 		{
 			close(connect_fd);
@@ -70,6 +70,12 @@ int main(int argc,char *argv)
 		}
 		else if(work_pid==0)
 		{
+			
+			char http_buf[1024];
+			recv(connect_fd,http_buf,1024,0);
+			printf("----------------------------------------------------------------\n");
+			printf("%s\n",http_buf);
+			printf("----------------------------------------------------------------\n");
 			close(server_sockfd);
 			sscanf(http_buf, "%*[^/]/%[^ ]",http_request);
 			printf("the request---%s %d\n",http_request,strlen(http_request));
