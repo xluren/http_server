@@ -14,7 +14,7 @@
 #define DEFAULTPORT "80"
 #define DEFAULTFILE "10"
 #define MAXLEN 1024
-#define MAXCLIENT 5
+#define MAXCLIENT 15
 #define BACKLOG 5
 
 const char* root_path="./html";

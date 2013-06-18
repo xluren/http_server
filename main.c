@@ -77,7 +77,7 @@ int main(int argc,char *argv)
 			}
 		}
 		
-		select_ret=select(MAXCLIENT+1,&read_set,NULL,NULL,&outtime_tv);
+		select_ret=select(MAXCLIENT+1,&read_set,NULL,NULL,/*&outtime_tv*/NULL);
 		
 		if(select_ret<0)
 		{
