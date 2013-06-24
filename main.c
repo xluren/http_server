@@ -1,11 +1,13 @@
 #include "getopt_long.h"
 void deal_request(char *http_request,int connect_fd)
 {
+	printf("fork id is %d\n",getpid());
 	char tmp_buf[MAXLEN];
 	int html_fd;
 	int file_len;
 	struct stat file_stat;
 
+	printf("the ID is %d\n",connect_fd);
 	if(strlen(http_request)==0)
 		http_request="index.html";
 	if((html_fd=open(http_request,O_RDONLY))==-1)
@@ -31,6 +33,26 @@ void deal_request(char *http_request,int connect_fd)
 		close(html_fd);
 	}
 
+}
+void get_request(int connect_fd)
+{
+
+	char http_buf[1024];
+	char http_request[64]={'\0'};
+	while(1)
+	{
+		int leng=recv(connect_fd,http_buf,1024,0);
+		printf("------------------------%d----------------------------------------\n",leng);
+		printf("%s\n",http_buf);
+		printf("----------------------------------------------------------------\n");
+		if(leng<=0)
+			close(connect_fd);
+		sscanf(http_buf, "%*[^/]/%[^ ]",http_request);
+		printf("the request---%s %d\n",http_request,strlen(http_request));
+		deal_request(http_request,connect_fd);
+		bzero(http_request,64);
+	}
+	exit(0);
 }
 int main(int argc,char *argv)
 {
@@ -58,6 +80,7 @@ int main(int argc,char *argv)
                         printf("accept socket error: %s(errno: %d)",strerror(errno),errno);        
                         continue;    
                 }
+	printf("the ID is %d\n",connect_fd);
 		/*char http_buf[1024];
 		recv(connect_fd,http_buf,1024,0);
 		printf("----------------------------------------------------------------\n");
@@ -65,23 +88,31 @@ int main(int argc,char *argv)
 		printf("----------------------------------------------------------------\n");*/
 		if((work_pid=fork())>0)
 		{
-			close(connect_fd);
-			continue;
+			//close(connect_fd);
+
+			//continue;
 		}
 		else if(work_pid==0)
 		{
 			
-			char http_buf[1024];
-			recv(connect_fd,http_buf,1024,0);
-			printf("----------------------------------------------------------------\n");
-			printf("%s\n",http_buf);
-			printf("----------------------------------------------------------------\n");
+			/*char http_buf[1024];
+			while(1)
+			{
+				int leng=recv(connect_fd,http_buf,1024,0);
+				printf("------------------------%d----------------------------------------\n",leng);
+				printf("%s\n",http_buf);
+				printf("----------------------------------------------------------------\n");
+				if(leng<=0)
+					close(connect_fd);
+				close(server_sockfd);
+				sscanf(http_buf, "%*[^/]/%[^ ]",http_request);
+				printf("the request---%s %d\n",http_request,strlen(http_request));
+				deal_request(http_request,connect_fd);
+				bzero(http_request,64);
+			}
+			exit(0);*/
 			close(server_sockfd);
-			sscanf(http_buf, "%*[^/]/%[^ ]",http_request);
-			printf("the request---%s %d\n",http_request,strlen(http_request));
-			deal_request(http_request,connect_fd);
-			bzero(http_request,64);
-			exit(0);
+			get_request(connect_fd);
 		}
 		else
 			printf("error");
